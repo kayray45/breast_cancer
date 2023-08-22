@@ -1,0 +1,120 @@
+---
+title: "Breast Cancer Analysis and Prediction using R Language"
+output:
+  pdf_document: default
+  html_document: default
+date: "2023-08-19"
+---
+
+## Breast Cancer
+Breast cancer is a type of cancer that originates in the cells of the breast tissue. It is the most common cancer among women in the world, although it can also occur in men (albeit much less frequently). It accounts for 25% of all cancer cases and affected over 2.1 Million people in 2015 alone. It starts when cells in the breast begin to grow out of control. These cells usually form tumors that can be seen via X-ray or felt as lumps in the breast area. Breast cancer can develop in various parts of the breast, including the milk ducts, lobules (glands that produce milk), or other tissue.
+
+The key challenge against its detection is how to classify tumors into malignant (cancerous) or benign(non-cancerous). This document provides the analysis of classifying these tumors using R language (with SVMs) and the Breast Cancer Wisconsin (Diagnostic) Dataset.
+
+### Data source
+<https://www.kaggle.com/datasets/nancyalaswad90/breast-cancer-dataset>.
+
+### Loading required libraries
+```{r}
+library(tidyverse)
+library(corrplot)
+library(caret)
+library(e1071)
+library(randomForest)
+library(corrplot)
+library(readxl)
+```
+### Loading the dataset
+```{r}
+data <- read_excel("data.xlsx")
+```
+
+### Check the structure and summary of the data
+```{r}
+head(data)
+str(data)
+summary(data)
+```
+### Distribution of diagnosis
+```{r}
+ggplot(data, aes(x = diagnosis, fill = diagnosis)) +
+  geom_bar() +
+  labs(title = "Distribution of Diagnosis")
+```
+### Correlation matrix
+```{r}
+cor_matrix <- cor(data[, 16:32])  # Excluding the 'id' column and 'diagnosis' column
+corrplot(cor_matrix, method = "color")
+```
+
+### Encoding diagnosis as binary variable
+```{r}
+data$diagnosis <- factor(data$diagnosis, levels = c("B", "M"), labels = c("Benign", "Malignant"))
+```
+
+### Handling missing values (if needed)
+```{r}
+data_cleaned <- na.omit(data)
+```
+
+### Spliting the dataset into train and test sets
+```{r}
+set.seed(123)
+trainIndex <- createDataPartition(data$diagnosis, p = 0.7, list = FALSE, times = 1)
+train_data <- data[trainIndex, ]
+test_data <- data[-trainIndex, ]
+```
+
+### Support Vector Machine (SVM) model
+```{r}
+svm_model <- svm(diagnosis ~ ., data = train_data)
+```
+
+### Random Forest model
+```{r}
+rf_model <- randomForest(diagnosis ~ ., data = train_data, ntree = 100)
+```
+
+### Predictions using SVM and Random Forest
+```{r}
+svm_pred <- predict(svm_model, newdata = test_data)
+rf_pred <- predict(rf_model, newdata = test_data)
+```
+
+### Evaluate models
+```{r}
+confusionMatrix(svm_pred, test_data$diagnosis)
+confusionMatrix(rf_pred, test_data$diagnosis)
+```
+
+### Summary of the statistics
+
+For the SVM Model:
+- Accuracy: 0.9588
+- 95% Confidence Interval (CI): (0.917, 0.9833)
+- No Information Rate: 0.6294
+- Kappa: 0.912
+- Sensitivity (True Positive Rate): 0.9626
+- Specificity (True Negative Rate): 0.9524
+- Positive Predictive Value (Precision): 0.9717
+- Negative Predictive Value: 0.9375
+- Prevalence: 0.6294
+- Detection Rate: 0.6059
+- Detection Prevalence: 0.6235
+- Balanced Accuracy: 0.9575
+
+For the Random Forest Model:
+- Accuracy: 0.9706
+- 95% Confidence Interval (CI): (0.9327, 0.9904)
+- No Information Rate: 0.6294
+- Kappa: 0.9367
+- Sensitivity (True Positive Rate): 0.9813
+- Specificity (True Negative Rate): 0.9524
+- Positive Predictive Value (Precision): 0.9722
+- Negative Predictive Value: 0.9677
+- Prevalence: 0.6294
+- Detection Rate: 0.6176
+- Detection Prevalence: 0.6353
+- Balanced Accuracy: 0.9668
+
+These statistics provide a comprehensive assessment of how well the models are performing.
